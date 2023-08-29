@@ -1,5 +1,5 @@
 # Project 1 - Cyber Security Base
-Project work for [1](https://cybersecuritybase.mooc.fi/) where the given task is to create a web application that has at least five different flaws from the OWASP top ten list as well as their fixes
+Project work for [[1]](https://cybersecuritybase.mooc.fi/) where the given task is to create a web application that has at least five different flaws from the OWASP top ten list as well as their fixes
 CSRF is missing from the OWASP list as it is more rare nowadays 
 due to the more secure frameworks. However, due to its fundamental nature it is allowed as a flaw.
 
