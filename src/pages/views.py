@@ -36,7 +36,7 @@ def transferView(request):
 		
 		from_acc.balance -= amount
 		to_acc.balance += amount
-		logger.info(f'Sent {amount} from {from_user} to {to_user} from IP: {request.META["REMOTE_ADDR"]}')
+		# logger.info(f'Sent {amount} from {from_user} to {to_user} from IP: {request.META["REMOTE_ADDR"]}')
 
 		from_acc.save()
 		to_acc.save()
