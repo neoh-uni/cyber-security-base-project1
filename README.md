@@ -1,189 +1,142 @@
 # Project 1 - Cyber Security Base
-The task is to create a web application that has at least five different
- flaws from the OWASP top ten list as well as their fixes
-CSRF is missing from the list as it is more rare nowadays 
+Project work for [1] where the given task is to create a web application that has at least five different flaws from the OWASP top ten list as well as their fixes
+CSRF is missing from the OWASP list as it is more rare nowadays 
 due to the more secure frameworks. However, due to its fundamental nature it is allowed as a flaw.
 
 ## OWASP Top 10 Web App Security risks
 https://owasp.org/www-project-top-ten/
-### [A01:2021-Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/)
 
 
 
-    Violation of the principle of least privilege or deny by default, where access should only be granted for particular capabilities, roles, or users, but is available to anyone.
+<!-- LINK: [project](https://github.com/neoh-uni/cyber-security-base-project) -->
 
-    Bypassing access control checks by modifying the URL (parameter tampering or force browsing), internal application state, or the HTML page, or by using an attack tool modifying API requests.
+# Installation and running
+1. Install dependencies
+```bash
+pip install django django_ratelimit requests
+```
+2. Run the server with:
+```
+python manage.py runserver
+```
+3. Default accounts:
+   | Username | Password |
+   |:--------:|:--------:|
+   | admin   | abcabcabc |
+   | alice    | redqueen |
+   | bob   | squarepants |
+4. Admin page: '/admin'. Normally server starts at `http://127.0.0.1:8000`
 
-    Permitting viewing or editing someone else's account, by providing its unique identifier (insecure direct object references)
+# Vulnerabilities
 
-    Accessing API with missing access controls for POST, PUT and DELETE.
+## FLAW 1: A01:2021-Broken Access Control
+views.py line 12
 
-    Elevation of privilege. Acting as a user without being logged in or acting as an admin when logged in as a user.
+`DESCRIPTION:` The decorator @csrf_exempt on top of transferViews function allows with the combination of a badly cryptographed sessionid to transfer user funds easily. The session can be hijacked with the provided `hijacksession.py` script, and funds can be transferred to another User by using the request.post method. @csrf_exempt ignores the csrf cookies.
 
-    Metadata manipulation, such as replaying or tampering with a JSON Web Token (JWT) access control token, or a cookie or hidden field manipulated to elevate privileges or abusing JWT invalidation.
+`FIX:` remove @csrf_exempt from code (sessionid fix looked at next), so django will default it to @csrf_protected .
 
-    CORS misconfiguration allows API access from unauthorized/untrusted origins.
 
-    Force browsing to authenticated pages as an unauthenticated user or to privileged pages as a standard user.
+## FLAW 2: A01:2021-Broken Access Control / A02:2021-Cryptographic Failures
+config/badsession.py
+config/settings.py line 54
 
-### [A02:2021-Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
+`DESCRIPTION:` badsession.py is a bad attempt in inventing ones own cryptographic sessionid cookie. The seasionid values can be guessed e.g. by looking at the cookies via chrome dev tools. This can lead to session hijacking provided as an example in hijacksession.py in combination with the csrf_exempt above.
 
-    Is any data transmitted in clear text? This concerns protocols such as HTTP, SMTP, FTP also using TLS upgrades like STARTTLS. External internet traffic is hazardous. Verify all internal traffic, e.g., between load balancers, web servers, or back-end systems.
+`FIX:` Using djangos default sessonid handling or another proven method, removing badsession.py and line 54 with the custom session engine.
 
-    Are any old or weak cryptographic algorithms or protocols used either by default or in older code?
 
-    Are default crypto keys in use, weak crypto keys generated or re-used, or is proper key management or rotation missing? Are crypto keys checked into source code repositories?
+## FLAW 3: A02:2021-Cryptographic Failures 
+config/settings.py
 
-    Is encryption not enforced, e.g., are any HTTP headers (browser) security directives or headers missing?
-
-    Is the received server certificate and the trust chain properly validated?
-
-    Are initialization vectors ignored, reused, or not generated sufficiently secure for the cryptographic mode of operation? Is an insecure mode of operation such as ECB in use? Is encryption used when authenticated encryption is more appropriate?
-
-    Are passwords being used as cryptographic keys in absence of a password base key derivation function?
-
-    Is randomness used for cryptographic purposes that was not designed to meet cryptographic requirements? Even if the correct function is chosen, does it need to be seeded by the developer, and if not, has the developer over-written the strong seeding functionality built into it with a seed that lacks sufficient entropy/unpredictability?
-
-    Are deprecated hash functions such as MD5 or SHA1 in use, or are non-cryptographic hash functions used when cryptographic hash functions are needed?
-
-    Are deprecated cryptographic padding methods such as PKCS number 1 v1.5 in use?
-
-    Are cryptographic error messages or side channel information exploitable, for example in the form of padding oracle attacks?
-
-FLAW {
+`
+DESCRIPTION:` 
+```
     Not setting CSRF_COOKIE_SECURE = True
     Not setting SESSION_COOKIE_SECURE = True
-    config/badsession.py
-    settings.py:
-    line 54 SESSION_ENGINE = 'src.config.badsession' 
-    line 23: SECRET_KEY = 'password23'
-}
-The first two prevent transmitting cookies over HTTP instead of HTTPS accidentally.
-badsession.py is a bad attempt in inventing ones own cryptographic session cookie, and very easily guessable, which could lead to session hijacking.
-SECRET_KEY should not be checked into the source repo, and the password itself is very simple.
-m
-fix:    Add the first two True lines to settings.py . Remove the bad sessionid attempt and use default django sessionid handling.
-SECRET_KEY, instead of hardcoding it, load it from an environment variable. The key should also be a large random value.
-### [A03:2021-Injection](https://owasp.org/Top10/A03_2021-Injection/)
+```
+These two prevent transmitting cookies over HTTP instead of HTTPS accidentally.
+
+`FIX:` Adding them to settings.py
 
 
-    User-supplied data is not validated, filtered, or sanitized by the application.
-
-    Dynamic queries or non-parameterized calls without context-aware escaping are used directly in the interpreter.
-
-    Hostile data is used within object-relational mapping (ORM) search parameters to extract additional, sensitive records.
-
-    Hostile data is directly used or concatenated. The SQL or command contains the structure and malicious data in dynamic queries, commands, or stored procedure
-
-### [A04:2021-Insecure Design](https://owasp.org/Top10/A04_2021-Insecure_Design/)
-Scenario #1: A credential recovery workflow might include “questions and answers,” which is prohibited by NIST 800-63b, the OWASP ASVS, and the OWASP Top 10. Questions and answers cannot be trusted as evidence of identity as more than one person can know the answers, which is why they are prohibited. Such code should be removed and replaced with a more secure design.
-
-Scenario #2: A cinema chain allows group booking discounts and has a maximum of fifteen attendees before requiring a deposit. Attackers could threat model this flow and test if they could book six hundred seats and all cinemas at once in a few requests, causing a massive loss of income.
-
-### [A05:2021-Security Misconfiguration](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/)
+## FLAW 4: A02:2021-Cryptographic Failures / A07:2021-Identification and Authentication Failures
+config/settings.py line 23
 
 
-    Missing appropriate security hardening across any part of the application stack or improperly configured permissions on cloud services.
-
-    Unnecessary features are enabled or installed (e.g., unnecessary ports, services, pages, accounts, or privileges).
-
-    Default accounts and their passwords are still enabled and unchanged.
-
-    Error handling reveals stack traces or other overly informative error messages to users.
-
-    For upgraded systems, the latest security features are disabled or not configured securely.
-
-    The security settings in the application servers, application frameworks (e.g., Struts, Spring, ASP.NET), libraries, databases, etc., are not set to secure values.
-
-    The server does not send security headers or directives, or they are not set to secure values.
-
-    The software is out of date or vulnerable (see A06:2021-Vulnerable and Outdated Components).
+`DESCRIPTION / FIX:` : SECRET_KEY = 'password23' . The secret_key should not be checked into the source repo hardcoded, and should be loaded from an environment variable. The keyvalue itself is very simple and should be a large random value instead.
 
 
+## FLAW 5 (ish): A06:2021-Vulnerable and Outdated Components
+config/*.py ; import os
 
-### [A06:2021-Vulnerable and Outdated Components](https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/)
-FLAW { settings.py: import os; to use os.path
-} The os module gives a lot of access to the system if commands are misconfigured compared to Pathlib.
-fix: using Pathlib instead
-### [A07:2021-Identification and Authentication Failures](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/)
-Confirmation of the user's identity, authentication, and session management is critical to protect against authentication-related attacks. There may be authentication weaknesses if the application:
+`
+DESCRIPTION:` The os module gives a lot of access to the system if commands are misconfigured compared to Pathlib.
 
-    Permits automated attacks such as credential stuffing, where the attacker has a list of valid usernames and passwords.
-
-    Permits brute force or other automated attacks.
-
-    Permits default, weak, or well-known passwords, such as "Password1" or "admin/admin".
-
-    Uses weak or ineffective credential recovery and forgot-password processes, such as "knowledge-based answers," which cannot be made safe.
-
-    Uses plain text, encrypted, or weakly hashed passwords data stores (see A02:2021-Cryptographic Failures).
-
-    Has missing or ineffective multi-factor authentication.
-
-    Exposes session identifier in the URL.
-
-    Reuse session identifier after successful login.
-
-    Does not correctly invalidate Session IDs. User sessions or authentication tokens (mainly single sign-on (SSO) tokens) aren't properly invalidated during logout or a period of inactivity.
-
-How to Prevent
-
-    Where possible, implement multi-factor authentication to prevent automated credential stuffing, brute force, and stolen credential reuse attacks.
-
-    Do not ship or deploy with any default credentials, particularly for admin users.
-
-    Implement weak password checks, such as testing new or changed passwords against the top 10,000 worst passwords list.
-
-    Align password length, complexity, and rotation policies with National Institute of Standards and Technology (NIST) 800-63b's guidelines in section 5.1.1 for Memorized Secrets or other modern, evidence-based password policies.
-
-    Ensure registration, credential recovery, and API pathways are hardened against account enumeration attacks by using the same messages for all outcomes.
-
-    Limit or increasingly delay failed login attempts, but be careful not to create a denial of service scenario. Log all failures and alert administrators when credential stuffing, brute force, or other attacks are detected.
-
-    Use a server-side, secure, built-in session manager that generates a new random session ID with high entropy after login. Session identifier should not be in the URL, be securely stored, and invalidated after logout, idle, and absolute timeouts.
-
-### [A08:2021-Software and Data Integrity Failures](https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/)
-### [A09:2021-Security Logging and Monitoring Failures](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/)
+`FIX:` using Pathlib instead
 
 
-    Auditable events, such as logins, failed logins, and high-value transactions, are not logged.
-
-    Warnings and errors generate no, inadequate, or unclear log messages.
-
-    Logs of applications and APIs are not monitored for suspicious activity.
-
-    Logs are only stored locally.
-
-    Appropriate alerting thresholds and response escalation processes are not in place or effective.
-
-    Penetration testing and scans by dynamic application security testing (DAST) tools (such as OWASP ZAP) do not trigger alerts.
-
-    The application cannot detect, escalate, or alert for active attacks in real-time or near real-time.
-
-FLAW {
-settings.py:
-            line 26: DEBUG = True
-Auditable events are not logged       
-}
-DEBUG = True, leaks information such as excerpt of source code, variables, libraries used and so on, and should be turned off for production.
-Auditable events such as high-value transactions are not logged.
-fix: DEBUG = False, and suitable values for ALLOWED_HOST to protect site against some CSRF attacks. Also in the web server, incorrect hosts should return e.g. "444 No Response" and not forward requests to django.
-Logging should be implemented, and made sure that sensitive parameters such as passwords and credit card numbers are not logged, e.g via djangos sensitive_post_parameter decorator for POST parameters or by custom error reports.
-
-### [A10:2021-Server-Side Request Forgery](https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/)
-SSRF flaws occur whenever a web application is fetching a remote resource without validating the user-supplied URL
-
-From Application layer:
-
-    Sanitize and validate all client-supplied input data
-
-    Enforce the URL schema, port, and destination with a positive allow list
-
-    Do not send raw responses to clients
-
-    Disable HTTP redirections
-
-    Be aware of the URL consistency to avoid attacks such as DNS rebinding and “time of check, time of use” (TOCTOU) race conditions
+## FLAW 6: A07:2021-Identification and Authentication Failures
+default password validation in django
+config/settings.py line 97
 
 
-Scenario #2: Sensitive data exposure – Attackers can access local files or internal services to gain sensitive information such as file:///etc/passwd and http://localhost:28017/
+`DESCRIPTION:` the default password validation allows for minimal eight character lower case passwords like 'abcabca', which can be easily guessable.
+
+`FIX:` Since there are no quick fixes to implement symbls and uppercase checks [[1](https://docs.djangoproject.com/en/2.0/_modules/django/contrib/auth/password_validation/)], we will simply extend minimum password length to 16 characters for new users, by uncommenting the lines after 98-100
+
+
+## FLAW 7: A07:2021-Identification and Authentication Failures
+[pages/views.py line 41](),
+[config/urls.py line 24](),
+[pages/ursl.py line 9]()
+
+
+`DESCRIPTION:` the default LoginView implementation did not prevent brute force login attempts, but allowed continuous password attempts. So the attacker could just attempt to login to the username with different passwords continuously. LoginView also cached the previously attempted username.
+
+`FIX:` The new implementation ratelimits login attempts using django_ratelimit module. After a certain amount failed attempts the user is redirect to a 403 error page, in our case after three attempts per hour amount using the `@ratelimit` decorator. These requests should also be configured limited/blocked from the webserver, and DDOS protection e.g. 'cloudflare' could be considered. Note that the admin page is not rate limited from the backend. One should also consider adding multi-factor authentification.
+`@never_cache` decorator was used to remove username cache with each page load.
+
+
+## FLAW 8: A09:2021-Security Logging and Monitoring Failures
+[settings.py line 26]()
+
+
+`DESCRIPTION:` DEBUG = True, leaks information such as excerpt of source code, variables, libraries used and so on, and should be turned off for production. This can be simply tested by going to a link that doesnt exist within the server and the urls are displayed in the error report.
+
+`FIX:` DEBUG = False, and suitable values for ALLOWED_HOST to protect site against some CSRF attacks. No hosts are currently added to the list, since it is not hosted anywhere. Also in the web server, incorrect hosts should return e.g. "444 No Response" and not forward requests to the backend.
+
+## FLAW 9: A09:2021-Security Logging and Monitoring Failures
+views.py
+
+`DESCRIPTION:` Auditable events such as high-value transactions should be logged.
+
+`FIX`: Implemented simple logging for transactions with transaction time and from which account to which.
+Additional considerations: The logs should be cryptographically secured. The names should be replaced by identification hashes that cannot be guessed and thus be traced by outsiders. Other events such as log in, log out, time active and failed transactions should also be considered to be logged.
+
+
+## FLAW 10: Sensitive data exposure
+db.sqlite3
+
+`DESCRIPTION`: Since the data is stored locally and unencrypted, an attacker could change the balance of any account with a simple script as provided in `unsecuresql.py` when having local server access. The attacker could also see all the users and balances.
+
+`FIX:` The database should be encrypted. It could be wise to host a separate SQL server for security and scalability if slightly larger latency is not a problem. Keeping the server and database separate provides an extra layer of security incase one or the other is compromised. SQLite does not have built-in encryption, so information on tables and key logic would still be seen even if the row values were encrypted. We could encrypt values by overriding the default `def save()` function under module.py in class Accounts:
+```Python
+class Account(models.Model):
+	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	balance = models.IntegerField()
+
+    def my_encryption():
+        ...
+
+    def save(self, *args, **kwargs):
+        self.user = self.my_encryption(self.user)
+        self.balance =  self.my_encryption(self.balance)
+        super().save(*args, **kwargs)
+```
+Implementing this would currently break a lot of stuff in the current project, as decryption logic would need to be implemented, and a much easier solution would simply be to use e.g. PostgreSQL that offers encryption built-in. 
+
+There are multiple things that could still be made better and less vulnerable and here we explored only a subset of problems; e.g. uncommon admin page url (urls.py line 22), admin alerts, logging out users automatically, https, transactions by account number, and so on. In this project I used the exercise 'bad-configuration' [1] as a django framework to introduce problems and to solve them.
+
+## References
+[1] https://cybersecuritybase.mooc.fi/
