@@ -13,7 +13,7 @@ https://owasp.org/www-project-top-ten/
 # Installation and running
 1. Install dependencies
 ```bash
-pip install django django_ratelimit requests
+pip install -r requirements.txt
 ```
 2. Run the server with:
 ```
@@ -30,7 +30,7 @@ python manage.py runserver
 # Vulnerabilities
 
 ## FLAW 1: A01:2021-Broken Access Control
-views.py line 12
+[views.py line 22](src/pages/views.py#22)
 
 `DESCRIPTION:` The decorator @csrf_exempt on top of transferViews function allows with the combination of a badly cryptographed sessionid to transfer user funds easily. The session can be hijacked with the provided `hijacksession.py` script, and funds can be transferred to another User by using the request.post method. @csrf_exempt ignores the csrf cookies.
 
@@ -38,8 +38,9 @@ views.py line 12
 
 
 ## FLAW 2: A01:2021-Broken Access Control / A02:2021-Cryptographic Failures
-config/badsession.py
-config/settings.py line 54
+[badsession.py](src/config/badsession.py)
+<br> 
+[settings.py line 54](src/config/settings.py#54)
 
 `DESCRIPTION:` badsession.py is a bad attempt in inventing ones own cryptographic sessionid cookie. The seasionid values can be guessed e.g. by looking at the cookies via chrome dev tools. This can lead to session hijacking provided as an example in hijacksession.py in combination with the csrf_exempt above.
 
@@ -47,10 +48,9 @@ config/settings.py line 54
 
 
 ## FLAW 3: A02:2021-Cryptographic Failures 
-config/settings.py
+[settings.py](src/config/settings.py)
 
-`
-DESCRIPTION:` 
+`DESCRIPTION:` 
 ```
     Not setting CSRF_COOKIE_SECURE = True
     Not setting SESSION_COOKIE_SECURE = True
@@ -61,35 +61,34 @@ These two prevent transmitting cookies over HTTP instead of HTTPS accidentally.
 
 
 ## FLAW 4: A02:2021-Cryptographic Failures / A07:2021-Identification and Authentication Failures
-config/settings.py line 23
+[settings.py line 23](src/config/settings.py#23)
 
 
 `DESCRIPTION / FIX:` : SECRET_KEY = 'password23' . The secret_key should not be checked into the source repo hardcoded, and should be loaded from an environment variable. The keyvalue itself is very simple and should be a large random value instead.
 
 
 ## FLAW 5 (ish): A06:2021-Vulnerable and Outdated Components
-config/*.py ; import os
+[config/*.py](src/config/); import os
 
-`
-DESCRIPTION:` The os module gives a lot of access to the system if commands are misconfigured compared to Pathlib.
+`DESCRIPTION:` The os module gives a lot of access to the system if commands are misconfigured compared to Pathlib.
 
 `FIX:` using Pathlib instead
 
 
 ## FLAW 6: A07:2021-Identification and Authentication Failures
 default password validation in django
-config/settings.py line 97
+[settings.py line 96](src/config/settings.py#96)
 
 
-`DESCRIPTION:` the default password validation allows for minimal eight character lower case passwords like 'abcabca', which can be easily guessable.
+`DESCRIPTION:` the default password validation allows for minimal eight character lower case passwords like 'abcabca', which can be easily guessable. [2](https://www.passwordmonster.com/)
 
-`FIX:` Since there are no quick fixes to implement symbls and uppercase checks [[1](https://docs.djangoproject.com/en/2.0/_modules/django/contrib/auth/password_validation/)], we will simply extend minimum password length to 16 characters for new users, by uncommenting the lines after 98-100
+`FIX:` Since there are no quick fixes to implement symbols and uppercase checks [[3](https://docs.djangoproject.com/en/2.0/_modules/django/contrib/auth/password_validation/)], we will simply extend minimum password length to 16 characters for new users, by uncommenting the lines after 97-99.
 
 
 ## FLAW 7: A07:2021-Identification and Authentication Failures
-[pages/views.py line 41](),
-[config/urls.py line 24](),
-[pages/ursl.py line 9]()
+[views.py line 41](src/pages/views.py#41),
+[config/urls.py line 24](src/config/urls.py#24),
+[pages/urls.py line 9](src/pages/urls.py#9)
 
 
 `DESCRIPTION:` the default LoginView implementation did not prevent brute force login attempts, but allowed continuous password attempts. So the attacker could just attempt to login to the username with different passwords continuously. LoginView also cached the previously attempted username.
@@ -99,7 +98,7 @@ config/settings.py line 97
 
 
 ## FLAW 8: A09:2021-Security Logging and Monitoring Failures
-[settings.py line 26]()
+[settings.py line 26](src/config/settings.py#26)
 
 
 `DESCRIPTION:` DEBUG = True, leaks information such as excerpt of source code, variables, libraries used and so on, and should be turned off for production. This can be simply tested by going to a link that doesnt exist within the server and the urls are displayed in the error report.
@@ -107,7 +106,7 @@ config/settings.py line 97
 `FIX:` DEBUG = False, and suitable values for ALLOWED_HOST to protect site against some CSRF attacks. No hosts are currently added to the list, since it is not hosted anywhere. Also in the web server, incorrect hosts should return e.g. "444 No Response" and not forward requests to the backend.
 
 ## FLAW 9: A09:2021-Security Logging and Monitoring Failures
-views.py
+[views.py](src/pages/views.py#39)
 
 `DESCRIPTION:` Auditable events such as high-value transactions should be logged.
 
@@ -139,4 +138,6 @@ Implementing this would currently break a lot of stuff in the current project, a
 There are multiple things that could still be made better and less vulnerable and here we explored only a subset of problems; e.g. uncommon admin page url (urls.py line 22), admin alerts, logging out users automatically, https, transactions by account number, and so on. In this project I used the exercise 'bad-configuration' [1] as a django framework to introduce problems and to solve them.
 
 ## References
-[1] https://cybersecuritybase.mooc.fi/
+[1] https://cybersecuritybase.mooc.fi/ <br>
+[2] https://www.passwordmonster.com/ <br>
+[3] https://docs.djangoproject.com/en/2.0/_modules/django/contrib/auth/password_validation/ <br>
