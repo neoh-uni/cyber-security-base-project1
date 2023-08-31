@@ -20,8 +20,8 @@ from src.pages.views import loginView
 
 urlpatterns = [
     # path('myveRys3cr3t4dminUrl/', admin.site.urls),
-    path('admin/', admin.site.urls),
-	path('login/', loginView, name='login'),
-	path('logout/', LogoutView.as_view(next_page='/')),
-	path('', include('src.pages.urls'))
+    path("admin/", admin.site.urls),
+    path("login/", loginView, name="login"),
+    path("logout/", LogoutView.as_view(next_page="/")),
+    path("", include("src.pages.urls")),
 ]

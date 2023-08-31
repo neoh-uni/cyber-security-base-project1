@@ -51,7 +51,8 @@ python manage.py runserver
     Not setting CSRF_COOKIE_SECURE = True
     Not setting SESSION_COOKIE_SECURE = True
 ```
-These two prevent transmitting cookies over HTTP instead of HTTPS accidentally.
+These two lines prevent transmitting cookies over HTTP instead of HTTPS accidentally. When the cookies are sent over http the data is seen in plain text.
+This allows for session hijacking, and man-in-the-middle attacks where data transmission is intercepted between the user and the server, which allows for data tampering.
 
 `FIX:` Adding them to settings.py
 
@@ -60,7 +61,9 @@ These two prevent transmitting cookies over HTTP instead of HTTPS accidentally.
 [settings.py line 23](src/config/settings.py#23)
 
 
-`DESCRIPTION / FIX:` : SECRET_KEY = 'password23' . The secret_key should not be checked into the source repo hardcoded, and should be loaded from an environment variable. The keyvalue itself is very simple and should be a large random value instead.
+`DESCRIPTION:` : SECRET_KEY = 'password23' . The secret_key should not be checked into the source repo hardcoded. Leaking SECRET_KEY leads to a number of vulnerabilities: creating fake session and CSRF tokens allowing the impersonation of other users to transact balance, password resets, and so on.
+
+`FIX:` The key should be loaded from an environment variable. The keyvalue itself is very simple and should be a large random value instead.
 
 
 ## FLAW 5 (ish): A06:2021-Vulnerable and Outdated Components
